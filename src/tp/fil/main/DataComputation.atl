@@ -32,10 +32,52 @@ lazy rule FieldDeclarationToAttribute
 	to 
 		t : Data!Attribute(
 			name <- s.attributeName,
-			type <- s.typeName
+			type <- thisModule.TypeAccessToType(s.type)
 		)
 }
-
+lazy rule TypeAccessToType
+{
+	from
+		s : Java!TypeAccess
+	to
+		t : Data!Type(
+			isCollection <- s.isCollection,
+			name <- s.className,
+			fullName <- s.type.name,
+			doesReferenceModelClass <- (s.className <> 'String' and s.className <> 'double' and s.className <> 'int')
+		)
+}
+helper context Java!TypeAccess def : isCollection : Boolean = 
+	if(self = OclUndefined) then 
+		false
+	else
+		if(self.type = OclUndefined) then
+			false
+		else
+			self.type.name.startsWith('java.util.Collection')
+		endif
+	endif;
+		
+helper context Java!TypeAccess def : className : String = 
+	if(self = OclUndefined) then 
+		''
+	else
+		if(self.type = OclUndefined) then
+			''
+		else
+			let tab : Sequence(String) = self.type.name.split('\\.') in
+			if(tab.size() > 1 ) then
+				tab.last().substring(1, tab.last().size()-1) 
+			else
+				if(tab.size() = 1) then
+					tab.at(1)
+				else
+					''
+				endif
+			endif
+			
+		endif
+	endif;
 helper context Java!FieldDeclaration def : attributeName : String = 
 	let firstFragment : Java!VariableDeclarationFragment =  self.fragments.first() in
 	if (firstFragment = OclUndefined) then

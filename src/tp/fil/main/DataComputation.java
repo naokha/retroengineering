@@ -76,7 +76,7 @@ public class DataComputation {
 								String attributeTypeName;
 								Boolean isTypeOfAttributeCollection;
 								Boolean doesTypeReferenceModelClass;
-								attributes.add(createAttribute(getAttribute(currentFragment, "name"), getAttribute(typeType, "name")));
+								//attributes.add(createAttribute(getAttribute(currentFragment, "name"), getAttribute(typeType, "name")));
 							}
 						}
 						classes.add(createClass(className, attributes)); // add class with attributes				
