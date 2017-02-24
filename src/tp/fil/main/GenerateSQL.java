@@ -343,7 +343,7 @@ public class GenerateSQL extends AbstractAcceleoGenerator {
     public void registerPackages(ResourceSet resourceSet) {
         super.registerPackages(resourceSet);
         
-        Resource dataMetamodel = resourceSet.createResource(URI.createFileURI("src/tp/fil/resources/Data.ecore"));
+        Resource dataMetamodel = resourceSet.createResource(URI.createFileURI("C:/Users/chihe.PPC635/Documents/Git/retroengineering/src/tp/fil/resources/Data.ecore"));
 		try {
 			dataMetamodel.load(null);
 		} catch (IOException e) {

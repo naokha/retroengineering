@@ -5,3 +5,103 @@ module DataComputation;
 create OUT : Data from IN : Java;
 
 -- TO BE COMPLETED
+rule PackageToModel
+{
+	from 
+		s : Java!Package(s.packageName = 'petstore.model' )
+	to
+		t : Data!Model(
+			classes <- s.ownedElements->collect(c | thisModule.ClassDeclarationToClass(c))
+		)
+}
+
+lazy rule ClassDeclarationToClass  {
+	from
+		s : Java!ClassDeclaration
+	to
+		t : Data!Class(
+			name <- s.name,
+			attributes <- s.bodyDeclarations->select(a | a.oclIsTypeOf(Java!FieldDeclaration))->collect(a|thisModule.FieldDeclarationToAttribute(a))
+		)
+}
+
+lazy rule FieldDeclarationToAttribute
+{
+	from 
+		s : Java!FieldDeclaration
+	to 
+		t : Data!Attribute(
+			name <- s.attributeName,
+			type <- thisModule.TypeAccessToType(s.type)
+		)
+}
+lazy rule TypeAccessToType
+{
+	from
+		s : Java!TypeAccess
+	to
+		t : Data!Type(
+			isCollection <- s.isCollection,
+			name <- s.className,
+			fullName <- s.type.name,
+			doesReferenceModelClass <- (s.className <> 'String' and s.className <> 'double' and s.className <> 'int' and s.className <> 'BigInteger')
+		)
+}
+helper context Java!TypeAccess def : isCollection : Boolean = 
+	if(self = OclUndefined) then 
+		false
+	else
+		if(self.type = OclUndefined) then
+			false
+		else
+			self.type.name.startsWith('java.util.Collection')
+		endif
+	endif;
+		
+helper context Java!TypeAccess def : className : String = 
+	if(self = OclUndefined) then 
+		''
+	else
+		if(self.type = OclUndefined) then
+			''
+		else
+			let tab : Sequence(String) = self.type.name.split('\\.') in
+			if(tab.size() > 1 ) then
+				tab.last().substring(1, tab.last().size()-1) 
+			else
+				if(tab.size() = 1) then
+					tab.at(1)
+				else
+					''
+				endif
+			endif
+			
+		endif
+	endif;
+helper context Java!FieldDeclaration def : attributeName : String = 
+	let firstFragment : Java!VariableDeclarationFragment =  self.fragments.first() in
+	if (firstFragment = OclUndefined) then
+		''
+	else
+		firstFragment.name
+	endif;
+
+helper context Java!FieldDeclaration def : typeName : String = 
+	let typeAccess : Java!TypeAccess = self.type in 
+	if(typeAccess = OclUndefined) then 
+		''
+	else
+		typeAccess.type.name
+	endif;
+	
+helper context Java!Package def : packageName : String = 
+	if(self <> OclUndefined) then 
+		if(self.package <> OclUndefined) then
+			self.package.name + '.' + self.name
+		else
+			''
+		endif
+	else
+		''
+	endif; 
+
