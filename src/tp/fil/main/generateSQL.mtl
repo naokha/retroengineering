@@ -5,8 +5,13 @@
 [template public generateSQL(model : Model)]
 [comment @main/] 
 [file ('PetStore_database.sql', false, 'UTF-8')]
-	
-	[comment TO BE COMPLETED/]
+	[for (class : Class | model.classes)]
+		CREATE TABLE [class.name/] (
+		[for (attribute : Attribute | class.attributes) separator (',\n')]
+				[attribute.name + ' ' +  attribute.type/] 
+				[if (attribute.type = 'String')] VARCHAR(255)[/if][if (attribute.type = 'double')] DOUBLE[/if][/for]
+		);
+	[/for]
 
 [/file]
 [/template]

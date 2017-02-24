@@ -5,3 +5,61 @@ module DataComputation;
 create OUT : Data from IN : Java;
 
 -- TO BE COMPLETED
+rule PackageToModel
+{
+	from 
+		s : Java!Package(s.packageName = 'petstore.model' )
+	to
+		t : Data!Model(
+			classes <- s.ownedElements->collect(c | thisModule.ClassDeclarationToClass(c))
+		)
+}
+
+lazy rule ClassDeclarationToClass  {
+	from
+		s : Java!ClassDeclaration
+	to
+		t : Data!Class(
+			name <- s.name,
+			attributes <- s.bodyDeclarations->select(a | a.oclIsTypeOf(Java!FieldDeclaration))->collect(a|thisModule.FieldDeclarationToAttribute(a))
+		)
+}
+
+lazy rule FieldDeclarationToAttribute
+{
+	from 
+		s : Java!FieldDeclaration
+	to 
+		t : Data!Attribute(
+			name <- s.attributeName,
+			type <- s.typeName
+		)
+}
+
+helper context Java!FieldDeclaration def : attributeName : String = 
+	let firstFragment : Java!VariableDeclarationFragment =  self.fragments.first() in
+	if (firstFragment = OclUndefined) then
+		''
+	else
+		firstFragment.name
+	endif;
+
+helper context Java!FieldDeclaration def : typeName : String = 
+	let typeAccess : Java!TypeAccess = self.type in 
+	if(typeAccess = OclUndefined) then 
+		''
+	else
+		typeAccess.type.name
+	endif;
+	
+helper context Java!Package def : packageName : String = 
+	if(self <> OclUndefined) then 
+		if(self.package <> OclUndefined) then
+			self.package.name + '.' + self.name
+		else
+			''
+		endif
+	else
+		''
+	endif; 
+
