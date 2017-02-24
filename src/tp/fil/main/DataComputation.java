@@ -13,12 +13,14 @@ import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.EObjectContainmentEList;
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.gmt.modisco.java.BodyDeclaration;
 import org.eclipse.gmt.modisco.java.ClassDeclaration;
 import org.eclipse.gmt.modisco.java.NamedElement;
 import org.eclipse.gmt.modisco.java.Package;
+import org.eclipse.gmt.modisco.java.ParameterizedType;
 import org.eclipse.gmt.modisco.java.TypeAccess;
 import org.eclipse.gmt.modisco.java.VariableDeclarationFragment;
 import org.eclipse.gmt.modisco.java.emf.JavaPackage;
@@ -73,10 +75,18 @@ public class DataComputation {
 								TypeAccess type = (TypeAccess) getAttribute(currentBodyDeclaration, "type");
 								NamedElement attributeType = (NamedElement) getAttribute(type, "type");
 								String attributeFullTypeName = (String) getAttribute(attributeType, "name");
-								String attributeTypeName;
-								Boolean isTypeOfAttributeCollection;
-								Boolean doesTypeReferenceModelClass;
-								attributes.add(createAttribute(getAttribute(currentFragment, "name"), getAttribute(typeType, "name")));
+								String attributeTypeName = attributeFullTypeName;
+								boolean isTypeOfAttributeCollection = false;
+								boolean doesTypeReferenceModelClass = checkTypeReferenceModelClass(attributeType, attributeFullTypeName);
+								try {
+									TypeAccess typeOfType = (TypeAccess) getAttribute(attributeType, "type");
+									attributeTypeName = getAttributeTypeName(attributeType);
+									isTypeOfAttributeCollection = isAttributeTypeCollection(attributeType);
+								} catch (Exception e) {
+									// do nothing, means we have no collection
+								}								
+								EObject attributeTypeObj = createType(attributeTypeName, attributeFullTypeName, doesTypeReferenceModelClass, isTypeOfAttributeCollection);
+								attributes.add(createAttribute(getAttribute(currentFragment, "name"), attributeTypeObj));
 							}
 						}
 						classes.add(createClass(className, attributes)); // add class with attributes				
@@ -97,21 +107,44 @@ public class DataComputation {
 			e.printStackTrace();
 		}
 	}
+	
+	private static Boolean checkTypeReferenceModelClass(NamedElement attributeType, String attributeFullTypeName) {
+		String packageName = "";
+		String search = "model";
+		try {
+			packageName = getAttribute(attributeType, "package").toString();
+		} catch (Exception e) {
+			// do nothing
+		}
+		return attributeFullTypeName.contains(search) || packageName.contains(search);
+	}
 
-	public static Object getAttribute(EObject elem, String attributeName) {
+	private static boolean isAttributeTypeCollection(NamedElement attributeType) {
+		TypeAccess type = (TypeAccess) getAttribute(attributeType, "type");
+		NamedElement subType = (NamedElement) getAttribute(type, "type");
+		return  getAttribute(subType, "name").equals("Collection");
+	}
+	
+	private static String getAttributeTypeName(NamedElement attributeType) {
+		TypeAccess t = (TypeAccess) ((EObjectContainmentEList) getAttribute(attributeType, "typeArguments")).get(0);
+		NamedElement subT = (NamedElement) getAttribute(t, "type");
+		return (String) getAttribute(subT, "name");
+	}
+	
+	private static Object getAttribute(EObject elem, String attributeName) {
 		return elem.eGet(elem.eClass().getEStructuralFeature(attributeName));
 	}
 
-	public static String getName(EObject elem) {
+	private static String getName(EObject elem) {
 		return elem.eClass().getName();
 	}
 
-	public static EPackage getDataModelPackage(){
+	private static EPackage getDataModelPackage(){
 		EPackage totalPackage = (EPackage) dataMetamodel.getContents().get(0);
 		return totalPackage;
 	}
 
-	public static EObject createClass(String className, ArrayList<EObject> attributes) {
+	private static EObject createClass(String className, ArrayList<EObject> attributes) {
 		EPackage totalPackage = getDataModelPackage();
 		EClass classModel = (EClass) totalPackage.getEClassifier("Class");
 		EObject classObject = totalPackage.getEFactoryInstance().create(classModel);
@@ -119,8 +152,9 @@ public class DataComputation {
 		classObject.eSet(classModel.getEStructuralFeature("attributes"), attributes);
 		return classObject;
 	}
+	
 
-	public static EObject createAttribute(Object name, Object type) {
+	private static EObject createAttribute(Object name, EObject type) {
 		EPackage totalPackage = getDataModelPackage();
 		EClass attributeModel = (EClass) totalPackage.getEClassifier("Attribute");
 		EObject attributeObject = totalPackage.getEFactoryInstance().create(attributeModel);
@@ -128,8 +162,19 @@ public class DataComputation {
 		attributeObject.eSet(attributeModel.getEStructuralFeature("type"), type);
 		return attributeObject;
 	}
+	
+	private static EObject createType(String name, String fullName, boolean referencesModelClass, boolean isCollection){
+		EPackage totalPackage = getDataModelPackage();
+		EClass typeModel = (EClass) totalPackage.getEClassifier("Type");
+		EObject typeObject = totalPackage.getEFactoryInstance().create(typeModel);
+		typeObject.eSet(typeModel.getEStructuralFeature("name"), name);
+		typeObject.eSet(typeModel.getEStructuralFeature("fullName"), fullName);
+		typeObject.eSet(typeModel.getEStructuralFeature("doesReferenceModelClass"), referencesModelClass);
+		typeObject.eSet(typeModel.getEStructuralFeature("isCollection"), isCollection);
+		return typeObject;
+	}
 
-	public static EObject createModel(ArrayList<EObject> classes) {
+	private static EObject createModel(ArrayList<EObject> classes) {
 		EPackage totalPackage = getDataModelPackage();
 		EClass modelModel = (EClass) totalPackage.getEClassifier("Model");
 		EObject modelObject = totalPackage.getEFactoryInstance().create(modelModel);
