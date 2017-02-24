@@ -1,0 +1,26 @@
+[comment encoding = UTF-8/]
+[module generateHTML('http://data') /]
+[comment 'platform:/resource/tp.fil/src/tp/fil/resources/Data.ecore' /]
+ 
+[template public generateHTML(model:Model)]
+[comment @main/]  
+[file ('PetStore_rendering.html', false, 'UTF-8')]
+	[for (c: Class | model.classes)]
+		 <img src="https://yuml.me/diagram/scruffy/class/[c.generateClass()/]
+	[/for]
+[/file]
+[/template]
+
+[template public generateClass(c : Class)]
+	[ '[' /][c.name/]|[c.generateClassAttributes()/][']'/]">
+[/template]
+
+[template public generateClassAttributes(c: Class)]
+	[for (a: Attribute | c.attributes)]
+		[a.name/] : [a.type/];
+	[/for]
+[/template]
+
+[query public isAttributeClassRef(a : Attribute) : Boolean =
+	a.ancestors(Model)->first().classes->collect(c: Class | c.name = a.type)->size() = 0
+/]
