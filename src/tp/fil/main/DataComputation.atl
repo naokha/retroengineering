@@ -44,7 +44,7 @@ lazy rule TypeAccessToType
 			isCollection <- s.isCollection,
 			name <- s.className,
 			fullName <- s.type.name,
-			doesReferenceModelClass <- (s.className <> 'String' and s.className <> 'double' and s.className <> 'int')
+			doesReferenceModelClass <- (s.className <> 'String' and s.className <> 'double' and s.className <> 'int' and s.className <> 'BigInteger')
 		)
 }
 helper context Java!TypeAccess def : isCollection : Boolean = 
