@@ -44,9 +44,29 @@ lazy rule TypeAccessToType
 			isCollection <- s.isCollection,
 			name <- s.className,
 			fullName <- s.type.name,
-			doesReferenceModelClass <- (s.className <> 'String' and s.className <> 'double' and s.className <> 'int' and s.className <> 'BigInteger')
+			doesReferenceModelClass <- (s.packageName = 'model')
 		)
 }
+helper context Java!TypeAccess def : packageName : String = 
+	let type : Java!Type = self.type in
+	if(type <> OclUndefined) then 
+		if ( type.oclIsKindOf(Java!PrimitiveType)) then
+			''
+		else
+			if(type.oclIsKindOf(Java!ParameterizedType)) then
+				self.type.typeArguments->first().type.package.name
+			else
+				if(type.package <> OclUndefined) then
+					type.package.name
+				else
+					''
+				endif
+			endif
+		endif
+	else
+		''
+	endif; 
+
 helper context Java!TypeAccess def : isCollection : Boolean = 
 	if(self = OclUndefined) then 
 		false
@@ -104,4 +124,3 @@ helper context Java!Package def : packageName : String =
 	else
 		''
 	endif; 
-

@@ -51,7 +51,7 @@ public class DataComputation {
 			javaModel = resSet.createResource(URI.createFileURI("../PetStore/PetStore_java.xmi"));
 			javaModel.load(null);
 
-			dataModel = resSet.createResource(URI.createFileURI("../PetStore/PetStore_data.xmi"));
+			dataModel = resSet.createResource(URI.createFileURI("../PetStore/PetStore_data_from_java.xmi"));
 
 			/*
 			 * Beginning of the part to be completed...
